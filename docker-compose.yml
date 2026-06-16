@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  api_server:
+    build: .
+    container_name: mustafayev_factory_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Важно: пробрасываем папку с базой данных на реальный компьютер, 
+      # чтобы при перезапуске контейнера данные цеха и долги мастеров не стерлись!
+      - ./data:/app/data
+    restart: always
