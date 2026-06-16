@@ -126,3 +126,69 @@ def mark_order_as_ready(invoice_number):
         return f"Ошибка базы данных: {e}"
     finally:
         conn.close()
+# Добавить в самый конец файла src/sales.py
+
+def get_invoice_print_text(invoice_number):
+    """
+    Формирует красивый текстовый вид накладной для печати на принтере.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # 1. Получаем общие данные заказа и имя клиента
+    cursor.execute('''
+        SELECT o.id, o.date_created, o.deadline, o.total_cost, o.order_status, c.name, c.phone
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.id
+        WHERE o.invoice_number = ?
+    ''', (invoice_number,))
+    
+    order = cursor.fetchone()
+    if not order:
+        conn.close()
+        return "Накладная не найдена."
+        
+    order_id, date_created, deadline, total_cost, status, cust_name, cust_phone = order
+    
+    # 2. Получаем все позиции внутри этого заказа
+    cursor.execute('''
+        SELECT p.name, oi.quantity, oi.price
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ?
+    ''', (order_id,))
+    
+    items = cursor.fetchall()
+    conn.close()
+    
+    # 3. Собираем текстовый шаблон накладной (чек)
+    lines = []
+    lines.append("=========================================")
+    lines.append("           MUSTAFAYEV FACTORY            ")
+    lines.append("             Распильный цех              ")
+    lines.append("=========================================")
+    lines.append(f"НАКЛАДНАЯ: {invoice_number}")
+    lines.append(f"Дата создания: {date_created}")
+    lines.append(f"Обещанный срок: {deadline}")
+    lines.append("-----------------------------------------")
+    lines.append(f"Клиент: {cust_name}")
+    lines.append(f"Телефон: {cust_phone}")
+    lines.append("-----------------------------------------")
+    lines.append("Наименование          Кол-во     Сумма  ")
+    lines.append("-----------------------------------------")
+    
+    for name, qty, price in items:
+        item_total = qty * price
+        # Ограничиваем длину названия для красивого выравнивания в чеке
+        short_name = name[:20].ljust(20)
+        lines.append(f"{short_name}  {qty:<6}  {item_total:<10.0f}")
+        
+    lines.append("-----------------------------------------")
+    lines.append(f"ИТОГО К ОПЛАТЕ: {total_cost:.0f} сум")
+    lines.append(f"Статус заказа: {status.upper()}")
+    lines.append("=========================================")
+    lines.append("       Спасибо за заказ! Проверяйте      ")
+    lines.append("      комплектацию деталей на месте.     ")
+    lines.append("=========================================\n")
+    
+    return "\n".join(lines)
