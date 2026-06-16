@@ -107,3 +107,47 @@ def set_order_ready(invoice_number: str):
     if "Ошибка" in result or "не найден" in result:
         raise HTTPException(status_code=400, detail=result)
     return {"status": "success", "message": result}
+# Добавить в самый конец файла src/server.py
+
+@app.get("/orders/{invoice_number}/print")
+def get_print_invoice(invoice_number: str):
+    """Возвращает чистый отформатированный текст накладной для отправки на принтер"""
+    text = sales.get_invoice_print_text(invoice_number)
+    if text == "Накладная не найдена.":
+        raise HTTPException(status_code=404, detail=text)
+    return {"invoice_text": text}
+    // Функция внутри Flutter для отправки накладной на печать/просмотр
+Future<void> printInvoice(String invoiceNumber) async {
+  try {
+    final response = await _dio.get('$baseUrl/orders/$invoiceNumber/print');
+    String invoiceText = response.data['invoice_text'];
+
+    // Показываем превью накладной прямо на экране телефона перед печатью
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Печать накладной'),
+        content: SingleChildScrollView(
+          child: Text(
+            invoiceText, 
+            style: const TextStyle(fontFamily: 'Courier', fontSize: 12), // Моноширинный шрифт для ровных колонок
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Закрыть'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: const Text('Отправить на принтер'),
+            onPressed: () {
+              // Здесь вызывается системная печать Flutter (пакет 'printing')
+            },
+          ),
+        ],
+      ),
+    );
+  } catch (e) {
+    print('Ошибка печати: $e');
+  }
+}
