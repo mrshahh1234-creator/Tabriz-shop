@@ -61,7 +61,10 @@ def create_new_order(order_data: OrderCreateSchema):
     """Создать заказ и занять товар (Бронь под раскрой)"""
     # Превращаем данные из формата мобилки в обычный список словарей для нашего sales.py
     items_list = [{"product_id": i.product_id, "qty": i.qty, "price": i.price} for i in order_data.items]
-    result = sales.create_order(order_data.customer_id, items_list)
+    result = sales.create_order_with_deadline(
+    customer_id=order_data.customer_id, 
+    items=items_list, 
+    deadline_str=order_data.deadline  # <--- ПЕРЕДАЕМ ДЕДЛАЙН В НАШУ НОВУЮ ФУНКЦИЮ
     
     if "Ошибка" in result or "Недостаточно" in result:
         raise HTTPException(status_code=400, detail=result)
@@ -82,3 +85,16 @@ def return_order(order_id: int):
     if "Ошибка" in result:
         raise HTTPException(status_code=400, detail=result)
     return {"message": result}
+    # --- ДОБАВИТЬ В САМЫЙ КОНЕЦ ФАЙЛА SERVER.PY ---
+
+@app.get("/orders/check-overdue")
+def check_overdue_orders():
+    """
+    Эндпоинт-будильник. Телефон будет запрашивать его раз в минуту, 
+    чтобы выдать пуш-уведомление при срыве срока.
+    """
+    overdue_orders = sales.get_overdue_orders()
+    return {
+        "overdue_count": len(overdue_orders), 
+        "orders": overdue_orders
+    }
