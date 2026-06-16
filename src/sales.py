@@ -101,3 +101,28 @@ def get_overdue_orders():
             "amount": row[3]
         } for row in overdue
     ]
+# Добавить в конец файла src/sales.py
+
+def mark_order_as_ready(invoice_number):
+    """
+    Переводит заказ в статус 'ready'. 
+    Это останавливает счетчик дедлайна, и пуш-уведомления перестают приходить.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            UPDATE orders 
+            SET order_status = 'ready' 
+            WHERE invoice_number = ? AND order_status = 'pending'
+        ''', (invoice_number,))
+        
+        if cursor.rowcount == 0:
+            return "Заказ не найден или уже готов/выдан."
+            
+        conn.commit()
+        return f"Накладная {invoice_number} успешно переведена в статус ГОТОВО."
+    except Exception as e:
+        return f"Ошибка базы данных: {e}"
+    finally:
+        conn.close()
