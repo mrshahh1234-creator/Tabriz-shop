@@ -98,3 +98,12 @@ def check_overdue_orders():
         "overdue_count": len(overdue_orders), 
         "orders": overdue_orders
     }
+# Добавить в самый конец файла src/server.py
+
+@app.post("/orders/{invoice_number}/ready")
+def set_order_ready(invoice_number: str):
+    """Вызывается при нажатии кнопки 'Готово' на планшете в цеху"""
+    result = sales.mark_order_as_ready(invoice_number)
+    if "Ошибка" in result or "не найден" in result:
+        raise HTTPException(status_code=400, detail=result)
+    return {"status": "success", "message": result}
