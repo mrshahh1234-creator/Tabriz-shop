@@ -38,19 +38,20 @@ def init_furniture_db():
         )
     ''')
 
-    # 4. Заказы / Продажи
+    # 4. Заказы / Продажи (ОБНОВЛЕННАЯ СТРУКТУРА)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_number TEXT NOT NULL UNIQUE,     -- Индивидуальный номер накладной (строка по очереди)
             customer_id INTEGER,
             date_created TEXT DEFAULT CURRENT_TIMESTAMP,
+            deadline TEXT NOT NULL,                  -- Обещанный срок (Формат: YYYY-MM-DD HH:MM:SS)
             total_cost REAL NOT NULL,
-            order_status TEXT DEFAULT 'pending', -- 'pending' (в очереди), 'processing' (в распиле), 'ready' (готов), 'completed' (выдан)
-            payment_status TEXT DEFAULT 'unpaid', -- 'paid' (оплачен), 'debt' (в долг), 'partial' (частично)
+            order_status TEXT DEFAULT 'pending',     -- 'pending' (в очереди/распиле), 'ready' (готово), 'completed' (выдан)
+            payment_status TEXT DEFAULT 'unpaid',    -- 'unpaid', 'paid', 'debt' (в долг)
             FOREIGN KEY (customer_id) REFERENCES customers (id)
         )
     ''')
-
     # 5. Детализация заказа (что именно пилим или продаем в этом заказе)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS order_items (
