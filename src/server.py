@@ -16,6 +16,7 @@ class ItemInOrder(BaseModel):
 class OrderCreateSchema(BaseModel):
     customer_id: int
     items: List[ItemInOrder]
+    deadline: str  # <--- ДОБАВИТЬ ЭТУ СТРОКУ (Формат: YYYY-MM-DD HH:MM:SS)
 
 class OrderPaySchema(BaseModel):
     order_id: int
